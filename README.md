@@ -1,4 +1,4 @@
-# Carrefour-Supermarket--unsupervised-Leraning-using-R
+# Carrefour-Supermarket-Unsupervised-Learning-using-R
 # (Description)
 # BUSINESS UNDERSTANDING
 
