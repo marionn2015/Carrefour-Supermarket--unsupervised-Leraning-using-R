@@ -1,0 +1,448 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+---
+title: "R Notebook"
+output: html_notebook
+--
+
+# BUSINESS UNDERSTANDING
+ Carrefour Kenya  are currently undertaking a project that will inform the marketing department on the most relevant marketing strategies that will result in the highest no. of sales (total price including tax). Your project has been divided into four parts where you'll explore a recent marketing dataset by performing various unsupervised learning techniques and later providing recommendations based on your insights.
+
+# Specifying the Question
+
+# Part 1: Dimensionality Reduction
+
+This section of the project entails reducing your dataset to a low dimensional dataset using the t-SNE algorithm or PCA. You will be required to perform your analysis and provide insights gained from your analysis.
+
+the dataset used is ('http://bit.ly/CarreFourDataset")
+
+#Part 2: Feature Selection
+
+This section requires you to perform feature selection through the use of the unsupervised learning methods learned earlier this week. You will be required to perform your analysis and provide insights on the features that contribute the most information to the dataset.
+
+# Dataset ("http://bit.ly/CarreFourDataset")
+
+# Part 3: Association Rules
+
+This section will require that you create association rules that will allow you to identify relationships between variables in the dataset. You are provided with a separate dataset that comprises groups of items that will be associated with others. Just like in the other sections, you will also be required to provide insights for your analysis.
+# Dataset ("http://bit.ly/SupermarketDatasetII")
+
+# Part 4: Anomaly Detection
+
+You have also been requested to check whether there are any anomalies in the given sales dataset. The objective of this task being fraud detection.
+
+dataset ("http://bit.ly/CarreFourSalesDataset")
+
+
+```{r}
+install.packages("tidyverse",dependencies = TRUE)
+install.packages("ggplot2")
+library(ggplot2)
+install.packages("devtools",dependencies=TRUE)
+library(devtools) #Load devtools before running ggbiplot otherwise will encounter install_github error
+install_github("vqv/ggbiplot",force = TRUE) #For plotting PCA
+library(ggbiplot)
+install.packages("arules") # For association rules library 
+library(arules)
+install.packages("arulesViz")
+library(arulesViz)
+install.packages("Rtsne")
+library(Rtsne)
+install.packages("caret")
+install.packages("lattice")
+library(caret)
+install.packages("corrplot")
+library(corrplot)
+install.packages("anomalize") #Anormally detection
+library(anomalize)
+```
+
+```{r}
+install.packages("scales")
+
+
+```
+
+
+# PCA ANALYSIS
+# Dimensionality reduction is a statistical technique for reducing the number of random variables in a dataset by feature selection.
+
+```{r}
+# dataset1 ('http://bit.ly/CarreFourDataset")
+
+df_carre = read.csv("http://bit.ly/CarreFourDataset")
+head(df_carre)
+
+```
+```{r}
+#bottom five observations
+tail(df_carre)
+```
+```{r}
+# checking for dimensions
+dim(df_carre)
+```
+```{r}
+# checking for duplicates
+duplicated_rows <- duplicated(df_carre)
+duplicated_rows
+```
+
+
+```{r}
+# checking for data structure
+str(df_carre)
+```
+```{r}
+#Checking for the total the missing values
+colSums(is.na(df_carre))
+# there are no missing values
+
+```
+
+```{r}
+# check for unique values in factor data types
+
+print("Branch")
+unique(df_carre$Branch)
+print("Customer.type")
+unique(df_carre$Customer.type)
+print("Gender")
+unique(df_carre$Gender)
+print("Product line")
+unique(df_carre$'Product line')
+print("Payment")
+unique(df_carre$Payment)
+
+
+```
+
+```{r}
+# Convert data types using as.integer
+# we will encode columns from characters to numerical
+# Branch
+df_carre$Branch_Encode<-as.integer(as.factor(df_carre$Branch))
+
+# Customer Type
+df_carre$Customer_Type_Encode<-as.integer(as.factor(df_carre$Customer.type))
+
+# Gender
+df_carre$Gender_Encode<-as.integer(as.factor(df_carre$Gender))
+
+# Product.line
+df_carre$Product_Line_Encode<-as.integer(as.factor(df_carre$Product.line))
+
+#Payment
+df_carre$Payment_Encode<-as.integer(as.factor(df_carre$Payment))
+
+```
+
+```{r}
+install.packages("lubridate") #Date split package
+library(lubridate)
+```
+```{r}
+# we will split  the date year, month and day.
+# Then Convert to date datatype first then split thereafter
+df_carre$Date <- as.Date(df_carre$Date, "%m/%d/%Y")
+df_carre$year <- year(ymd(df_carre$Date))
+df_carre$month <- month(ymd(df_carre$Date)) 
+df_carre$day <- day(ymd(df_carre$Date))
+
+```
+
+```{r}
+# Convert date to time
+df_carre$hour = format(strptime(df_carre$Time,"%H:%M"),'%H')
+df_carre$minute = format(strptime(df_carre$Time,"%H:%M"),'%M')
+
+```
+
+# view the top 5 observations
+```{r}
+head(df_carre)
+```
+#Select numeric variables only
+#PCA usually identifies variances within columns.
+#Columns with a zero variance, drop them since PCA will return error.
+
+```{r}
+install.packages("magrittr") # package installations are only needed the first time you use it
+library(magrittr)
+
+```
+```{r}
+df_carre_numeric <- select_if(df_carre,is.numeric)
+str(df_carre_numeric)
+
+
+```
+```{r}
+names(df_carre_numeric)
+```
+
+
+```{r}
+# Identify the columns with zero column variance.
+names(df_carre_numeric[, sapply(df_carre_numeric, function(v) var(v, na.rm=TRUE)==0)])
+```
+
+```{r}
+# Drop the columns as they result to error "stop("cannot rescale a constant/zero column to unit variance")"
+df_carre <- subset(df_carre, select = -c(gross.margin.percentage, year))
+```
+
+
+```{r}
+df_carre_numeric
+
+
+```
+```{r}
+names(df_numeric)
+```
+
+
+```{r}
+# Identify the columns with zero column variance.
+names(df_carre[, sapply(df_carre, function(v) var(v, na.rm=TRUE)==0)])
+```
+
+```{r}
+# Drop the columns as they result to error "stop("cannot rescale a constant/zero column to unit variance")"
+df_carre <- subset(df_carre, select = -c(gross.margin.percentage, year))
+```
+
+```{r}
+dim(df_carre)
+```
+
+```{r}
+#PCA
+#prcomp utility run below to create the principal components
+
+sup_pca <- prcomp(df_carre, center = TRUE, scale. = TRUE)
+summary(sup_pca)
+
+```
+
+```{r}
+plot(sup_pca, type="l")
+
+```
+
+
+```{r}
+ggbiplot(sup_pca)
+
+```
+
+```{r}
+ggbiplot(sup_pca, labels=rownames(df_carre_num), obs.scale = 1, var.scale = 1)
+
+```
+
+
+
+# Run Stochastic Neighbour Embedding(t-SNE)Â¶
+
+```{r}
+tsne <- Rtsne(df_carre_numeric, dims = 2, perplexity=30, verbose=TRUE, max_iter = 500)
+
+```
+
+```{r}
+df_carre_numeric$Rating_num = as.integer(df_carre_numeric$Rating)
+
+# Curating the database for analysis 
+# 
+Labels<-df_carre_numeric$Rating_num
+df_carre_numeric$Rating_num<-as.factor(df_carre_numeric$Rating_num)
+
+# For plotting
+colors = rainbow(length(df_carre_numeric$Rating_num))
+names(colors) = unique(df_carre_numeric$Rating_num)
+
+plot(tsne$Y, t='n', main="tsne")
+text(tsne$Y, labels=df_carre_numeric$Rating_num, col=colors[df_carre_numeric$Rating_num])
+```
+
+
+
+
+# FEATURE SELECTION
+```{r}
+#Dataset <- # dataset1 ('http://bit.ly/CarreFourDataset")
+path<-"http://bit.ly/FeatureSelectionDataset" 
+
+Dataset<-read.csv(path, sep = ",", dec = ".",row.names = 1)
+Dataset<-Dataset[-4] 
+head(Dataset,3)
+```
+```{r}
+#  correlation matrix calculation
+#
+correlationMatrix <- cor(Dataset)
+print(correlationMatrix)
+
+```
+
+```{r}
+# highly correlated attributes
+# ---
+#
+highlyCorrelated <- findCorrelation(correlationMatrix, cutoff=0.75,names=TRUE)
+
+
+```
+
+```{r}
+ #We  remove variables with a higher correlation 
+# by comparing the results as shown below
+# Removing Redundant Features 
+# ---
+# 
+Dataset2<-Dataset[-highlyCorrelated]
+
+```
+
+
+# Association Analysis
+
+```{r}
+#dataset<-Supermarket_Sales_Data_II.csv'
+# Loading our dataset
+assoc = read.csv("Supermarket_Sales_Dataset II.csv", sep = )
+head(assoc)
+```
+```{r}
+# bottom observations
+tail(assoc)
+```
+```{r}
+#dimensions
+dim(assoc)
+
+```
+```{r}
+# data structure
+str(assoc)
+```
+
+```{r}
+# summary of the items purchased
+summary(assoc)
+```
+```{r}
+# Count the missing values
+colSums(is.na(assoc))
+```
+
+```{r}
+# Drop olive oil column as all of them are missing
+assoc$olive.oil <- NULL
+```
+```{r}
+# check if the column was dropped
+
+colSums(is.na(assoc))
+
+
+```
+
+```{r}
+#Items frequency for top 20 items
+# coerce data frame into transaction. 
+trans <- as(assoc, "transactions")
+# plot item frequency
+itemFrequencyPlot(trans,topN=20,type="absolute")
+```
+
+#Running Association rule
+
+```{r}
+install.packages("arules") # For association rules library 
+library(arules)
+install.packages("arulesViz",dependencies = TRUE)#
+library(arulesViz)
+```
+```{r}
+assoc = read.csv("Supermarket_Sales_Dataset II.csv", sep = )
+tail(assoc)
+```
+#Support is an indication of how frequently the itemset appears in the dataset
+# Confidence is an indication of how often the rule has been found to be true.
+
+
+
+
+
+```{r}
+# Get the rules
+rules <- apriori(assoc, parameter = list(supp = 0.5, conf = 0.8,target = "rules",minlen=2))
+rules <- sort(rules, by="lift", decreasing=TRUE)
+```
+```{r}
+#size of the model
+summary(assoc)
+```
+```{r}
+# Show the top 3 rules, but only 2 digits.
+#options(digi ts=2)
+inspect(rules[1:20])
+```
+# if someone buys vegetable mix,they are likely to buy green grapes
+
+
+
+#Anomally Analysis
+
+
+
+```{r}
+head(df_anomy)
+```
+
+
+
+
+```{r}
+df_anomy %>%
+# time_decompose(count) %>%
+# anomalize(remainder) %>%
+# time_recompose() %>%
+# plot_anomalies(time_recomposed = TRUE, ncol = 3, alpha_dots = 0.5)
+```
+
+
+```{r}
+install.packages("coindeskr")
+library(coindeskr) #bitcoin price extraction from coindesk
+```
+
+```{r}
+btc <- get_historic_price(start = "2017-01-01")
+
+```
+
+```{r}
+head(btc)
+
+```
+
+```{r}
+btc_ts <- btc %>% rownames_to_column() %>% as.tibble() %>% mutate(date = as.Date(rowname)) %>% select(-one_of('rowname'))
+
+```
+
+
+
+```{r}
+update.packages("rlang")
+library(rlang)
+sessionInfo()
+```
+
